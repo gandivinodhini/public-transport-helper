@@ -1,0 +1,6 @@
+{
+  "name": "TransitMate",
+  "description": "Plan your journey, compare transport options, view live alerts, and travel with confidence across bus, metro, and train networks.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
