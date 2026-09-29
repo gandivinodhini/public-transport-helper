@@ -12,6 +12,8 @@ import { AccountPage } from './pages/AccountPage.tsx';
 import { ReportPage } from './pages/ReportPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { TransitStop, ServiceAlert } from './types.ts';
+import { DEFAULT_STOPS, DEFAULT_ALERTS } from './data/defaultTransitData.ts';
+import { N8nChatWidget } from './components/N8nChatWidget.tsx';
 import { Navigation, Heart, Shield, Leaf } from 'lucide-react';
 
 export default function App() {
@@ -19,8 +21,10 @@ export default function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
 
-  const [allStops, setAllStops] = useState<TransitStop[]>([]);
-  const [alertsCount, setAlertsCount] = useState<number>(0);
+  const [allStops, setAllStops] = useState<TransitStop[]>(DEFAULT_STOPS);
+  const [alertsCount, setAlertsCount] = useState<number>(
+    DEFAULT_ALERTS.filter(a => a.severity !== 'normal').length
+  );
 
   // Search parameters passed from Home to Planner
   const [plannerParams, setPlannerParams] = useState<{
@@ -38,27 +42,45 @@ export default function App() {
   });
 
   useEffect(() => {
-    // Fetch initial stops and active alerts count
-    const initData = async () => {
+    let isMounted = true;
+
+    const initData = async (retryCount = 0) => {
       try {
-        const [stopsRes, alertsRes] = await Promise.all([
+        const [stopsRes, alertsRes] = await Promise.allSettled([
           fetch('/api/stops'),
           fetch('/api/alerts'),
         ]);
-        if (stopsRes.ok) {
-          const stops = await stopsRes.json();
-          setAllStops(stops);
+
+        if (!isMounted) return;
+
+        if (stopsRes.status === 'fulfilled' && stopsRes.value.ok) {
+          const stops = await stopsRes.value.json();
+          if (Array.isArray(stops) && stops.length > 0) {
+            setAllStops(stops);
+          }
+        } else if (retryCount < 2) {
+          setTimeout(() => initData(retryCount + 1), 1500);
         }
-        if (alertsRes.ok) {
-          const alerts: ServiceAlert[] = await alertsRes.json();
-          const delaysOrDisruptions = alerts.filter(a => a.severity !== 'normal').length;
-          setAlertsCount(delaysOrDisruptions);
+
+        if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) {
+          const alerts: ServiceAlert[] = await alertsRes.value.json();
+          if (Array.isArray(alerts)) {
+            const delaysOrDisruptions = alerts.filter(a => a.severity !== 'normal').length;
+            setAlertsCount(delaysOrDisruptions);
+          }
         }
-      } catch (err) {
-        console.error('Failed to load initial transit data:', err);
+      } catch {
+        if (retryCount < 2 && isMounted) {
+          setTimeout(() => initData(retryCount + 1), 1500);
+        }
       }
     };
+
     initData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleHomeSearch = (params: {
@@ -253,6 +275,9 @@ export default function App() {
           onClose={() => setAuthModalOpen(false)}
           defaultMode={authModalMode}
         />
+
+        {/* Embedded n8n Nathan AI Chatbot Widget */}
+        <N8nChatWidget />
       </div>
     </AuthProvider>
   );

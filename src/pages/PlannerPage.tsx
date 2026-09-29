@@ -20,6 +20,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { RouteOption } from '../types.ts';
+import { computeClientJourneys } from '../services/clientJourneyPlanner.ts';
 import { RouteDetailsModal } from '../components/RouteDetailsModal.tsx';
 import { MapComponent } from '../components/MapComponent.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -80,12 +81,28 @@ export const PlannerPage: React.FC<PlannerPageProps> = ({
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to compute journeys.');
-      const data = await res.json();
-      setRoutes(data.options || []);
-    } catch (err: any) {
-      console.error(err);
-      setError('Could not calculate routes. Please verify stop names.');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.options && data.options.length > 0) {
+          setRoutes(data.options);
+          return;
+        }
+      }
+      const clientOpts = computeClientJourneys({
+        origin,
+        destination,
+        departureTime,
+        transportPreference: transportPref,
+      });
+      setRoutes(clientOpts);
+    } catch {
+      const clientOpts = computeClientJourneys({
+        origin,
+        destination,
+        departureTime,
+        transportPreference: transportPref,
+      });
+      setRoutes(clientOpts);
     } finally {
       setLoading(false);
     }

@@ -11,29 +11,32 @@ import {
   Navigation,
 } from 'lucide-react';
 import { TransitRoute, TransitStop } from '../types.ts';
+import { DEFAULT_ROUTES } from '../data/defaultTransitData.ts';
 
 interface RoutesPageProps {
   onPlanTripFromRoute?: (routeName: string) => void;
 }
 
 export const RoutesPage: React.FC<RoutesPageProps> = ({ onPlanTripFromRoute }) => {
-  const [routes, setRoutes] = useState<TransitRoute[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [routes, setRoutes] = useState<TransitRoute[]>(DEFAULT_ROUTES);
+  const [loading, setLoading] = useState(false);
   const [selectedType, setSelectedType] = useState('all');
   const [expandedRouteId, setExpandedRouteId] = useState<number | null>(null);
   const [routeDetails, setRouteDetails] = useState<any>(null);
 
   useEffect(() => {
     const fetchRoutes = async () => {
-      setLoading(true);
       try {
         const res = await fetch('/api/routes');
         if (res.ok) {
           const data = await res.json();
-          setRoutes(data);
+          if (Array.isArray(data) && data.length > 0) {
+            setRoutes(data);
+            return;
+          }
         }
-      } catch (err) {
-        console.error('Failed to load routes:', err);
+      } catch {
+        setRoutes(DEFAULT_ROUTES);
       } finally {
         setLoading(false);
       }

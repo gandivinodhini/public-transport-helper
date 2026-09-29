@@ -13,25 +13,29 @@ import {
   Search,
 } from 'lucide-react';
 import { ServiceAlert } from '../types.ts';
+import { DEFAULT_ALERTS } from '../data/defaultTransitData.ts';
 
 export const AlertsPage: React.FC = () => {
-  const [alerts, setAlerts] = useState<ServiceAlert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [alerts, setAlerts] = useState<ServiceAlert[]>(DEFAULT_ALERTS);
+  const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
   const fetchAlerts = async () => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/alerts?type=${typeFilter}`);
       if (res.ok) {
         const data = await res.json();
-        setAlerts(data);
-        setLastRefreshed(new Date());
+        if (Array.isArray(data) && data.length > 0) {
+          setAlerts(data);
+          setLastRefreshed(new Date());
+          return;
+        }
       }
-    } catch (err) {
-      console.error('Failed to fetch service alerts:', err);
+      setAlerts(DEFAULT_ALERTS.filter(a => typeFilter === 'all' || a.transportType === typeFilter));
+    } catch {
+      setAlerts(DEFAULT_ALERTS.filter(a => typeFilter === 'all' || a.transportType === typeFilter));
     } finally {
       setLoading(false);
     }

@@ -16,9 +16,12 @@ import {
   LogOut,
   Settings,
   HelpCircle,
+  Bot,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { NotificationItem, ServiceAlert } from '../types.ts';
+import { openN8nChat } from './N8nChatWidget.tsx';
 
 interface NavbarProps {
   activeTab: string;
@@ -145,7 +148,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Right Action Items */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Nathan AI Chat Trigger */}
+            <button
+              onClick={openN8nChat}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-sm shadow-blue-500/20 transition-all hover:scale-105 cursor-pointer"
+              title="Chat with Nathan (TransitMate AI Assistant)"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ask Nathan AI</span>
+            </button>
+
             {/* Notification Center */}
             <div className="relative">
               <button
@@ -388,6 +401,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Admin Dashboard
               </button>
             )}
+
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openN8nChat();
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-semibold text-blue-700 bg-blue-50"
+            >
+              <Bot className="w-5 h-5 text-blue-600" />
+              <span>Ask Nathan (n8n AI Chat)</span>
+            </button>
 
             <button
               onClick={() => {

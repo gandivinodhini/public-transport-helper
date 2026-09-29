@@ -16,9 +16,12 @@ import {
   ArrowRightLeft,
   ChevronRight,
   CheckCircle2,
+  Bot,
+  MessageSquare,
 } from 'lucide-react';
 import { MapComponent } from '../components/MapComponent.tsx';
 import { TransitStop } from '../types.ts';
+import { openN8nChat } from '../components/N8nChatWidget.tsx';
 
 interface HomePageProps {
   onSearch: (params: {
@@ -309,6 +312,29 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               </div>
             )}
+
+            {/* n8n AI Assistant Quick Callout */}
+            <div className="mt-5 p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Need personal travel advice?</h4>
+                  <p className="text-[11px] text-slate-600">
+                    Ask Nathan, our n8n AI Assistant, about transfers, station amenities, and line delays.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={openN8nChat}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 self-end sm:self-auto cursor-pointer"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Chat with Nathan</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>

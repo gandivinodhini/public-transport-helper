@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { TransitStop } from '../types.ts';
+import { DEFAULT_STOPS, DEFAULT_ROUTES } from '../data/defaultTransitData.ts';
 import { MapComponent } from '../components/MapComponent.tsx';
 
 interface NearbyPageProps {
@@ -22,30 +23,62 @@ interface NearbyPageProps {
 }
 
 export const NearbyPage: React.FC<NearbyPageProps> = ({ onPlanTripFromStop }) => {
-  const [stops, setStops] = useState<TransitStop[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stops, setStops] = useState<TransitStop[]>(DEFAULT_STOPS);
+  const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'both' | 'list' | 'map'>('both');
   const [typeFilter, setTypeFilter] = useState('all');
   const [userCoords, setUserCoords] = useState<[number, number]>([1.2834, 103.8505]); // Default Central
   const [locPermissionState, setLocPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-  const [selectedStop, setSelectedStop] = useState<TransitStop | null>(null);
+  const [selectedStop, setSelectedStop] = useState<TransitStop | null>(DEFAULT_STOPS[0]);
 
   const fetchNearby = async (lat: number, lng: number, type: string) => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/stops/nearby?lat=${lat}&lng=${lng}&type=${type}`);
       if (res.ok) {
         const data = await res.json();
-        setStops(data);
-        if (data.length > 0 && !selectedStop) {
-          setSelectedStop(data[0]);
+        if (Array.isArray(data) && data.length > 0) {
+          setStops(data);
+          if (!selectedStop) setSelectedStop(data[0]);
+          return;
         }
       }
-    } catch (err) {
-      console.error('Failed to fetch nearby stops:', err);
+      // Fallback
+      fallbackNearby(lat, lng, type);
+    } catch {
+      fallbackNearby(lat, lng, type);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fallbackNearby = (lat: number, lng: number, type: string) => {
+    const computed = DEFAULT_STOPS.map(stop => {
+      const dLat = (stop.latitude - lat) * 111000;
+      const dLng = (stop.longitude - lng) * 111000 * Math.cos((lat * Math.PI) / 180);
+      const distanceMeters = Math.round(Math.sqrt(dLat * dLat + dLng * dLng));
+      const walkingMinutes = Math.max(1, Math.round(distanceMeters / 80));
+      return {
+        ...stop,
+        distanceMeters,
+        walkingMinutes,
+        availableRoutes: DEFAULT_ROUTES.slice(0, 2).map(r => ({
+          routeNumber: r.routeNumber,
+          name: r.name,
+          color: r.color,
+          type: r.type,
+          status: r.status,
+          nextDepartureInMinutes: Math.floor(Math.random() * 8) + 2,
+        })),
+      };
+    });
+
+    let filtered = computed;
+    if (type !== 'all') {
+      filtered = filtered.filter(s => s.type === type || (s.type === 'hub' && type !== 'bus'));
+    }
+    filtered.sort((a, b) => (a.distanceMeters || 0) - (b.distanceMeters || 0));
+    setStops(filtered);
+    if (filtered.length > 0) setSelectedStop(filtered[0]);
   };
 
   const requestLocation = () => {
